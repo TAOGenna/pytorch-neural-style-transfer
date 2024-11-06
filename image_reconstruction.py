@@ -4,32 +4,42 @@ FEATURE MAP VISUALIZATOR
 import torch
 import torch.nn as nn
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Use GPU 0
+
 from torchvision import transforms
-import cv2 as cv
+from PIL import Image
 import numpy as np
 from torchvision.models.feature_extraction import create_feature_extractor
 import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
 
-# ----------------- Fetch image and convert it to a torch tensor ---------------------
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-content_img_path = os.path.join(os.path.dirname(__file__),'data','content','bariloche.jpg')
-img = cv.imread(content_img_path)[:,:,::-1]
+def load_image(img_path):
+    image = Image.open(img_path).convert('RGB')
+    print(type(image))
+    img_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std= [0.229, 0.224, 0.225])
+    ])
+    return img_transform(image).unsqueeze(0)
 
-# uncomment to visualize image
-# cv.imshow('image',img[:,:,::-1])
-# cv.waitKey(0)
+# Function to convert a tensor back to an image
+def im_convert(tensor):
+    image = tensor.clone().detach().cpu().squeeze(0)
+    image = image.numpy().transpose(1, 2, 0)
+    # Un-normalize the image
+    image = image * [0.229, 0.224, 0.225] + [0.485, 0.456, 0.406]
+    # Clip the pixel values to be between 0 and 1
+    image = image.clip(0, 1)
+    return image
 
-img = img.astype(np.float32)
-TARGET_SIZE = 256
-img = np.resize(img,(TARGET_SIZE,TARGET_SIZE,3))
-img /= 255
-
-transformations = transforms.Compose([
-    transforms.ToTensor()
-])
-
-img = transformations(img).unsqueeze(0)
+def get_features(img, model):
+    pass
+# Fetch image and convert it to a torch tensor
+content_img_path = os.path.join(os.path.dirname(__file__), 'data', 'content', 'bariloche.jpg')
+img = load_image(content_img_path).to(DEVICE)
 # --------------------------------------------------------------------------------------
 
 
@@ -38,40 +48,32 @@ img = transformations(img).unsqueeze(0)
 # use features: ['conv1_1', 'conv2_1', 'conv3_1', 'conv4_1', 'conv4_2', 'conv5_1']
 # {'features.3':'conv1','features.10':'conv2','features.23':'conv3','features.36':'conv4','features.49':'conv5'}
 vgg_net = torch.hub.load('pytorch/vision:v0.10.0', 'vgg19_bn', pretrained=True);
-vgg_net.eval();
+vgg_net.eval().to(DEVICE)
 # as stated in the paper, we extract the layers using a CNN
 model = create_feature_extractor(vgg_net,{'features.49':'conv5'})
 
-# -------------------------------------------------------------------------------------
-
-# ------------------- sanity check: image through feature maps ----------------------------
-out = model(img)
-
-def sanity_check():
-    for i in range(1,6):
-        display_image = out[f'conv{i}'][0,0,:,:].detach().cpu().numpy()
-        plt.imshow(display_image)
-        plt.axis('off')
-        plt.show()
-
-#sanity_check()
-
-
-# define white noise
-white_noise = torch.rand(size=img.shape, requires_grad=True)
-
 # Optimization part
-epochs = 3000
-optimizer = torch.optim.Adam((white_noise,),lr=1e1)
-fixed_out = out['conv5'] # for now we select conv5, but it can be any of the other convs
-loss_function = torch.nn.MSELoss()
+with torch.no_grad():
+    fixed_out = model(img)['conv5'].detach() # for now we select conv5, but it can be any of the other convs
+# initialize noise 
+white_noise = torch.rand(size=img.shape, requires_grad=True, device=DEVICE)
+
+# optimization setup
+loss_function = nn.MSELoss()
+epochs = 2000
+optimizer = torch.optim.Adam([white_noise]),lr=0.003)
+
 for i in (t := trange(epochs)):
-    # at each epoch we send through our newly `white_noise` image
+    optimizer.zero_grad()
+    # At each epoch, we send through our newly `white_noise` image
     end_image = model(white_noise)['conv5']
     loss = loss_function(end_image, fixed_out)
-    loss.backward(retain_graph = True)
+    loss.backward()
     optimizer.step()
-    optimizer.zero_grad()
-    t.set_description(f'loss function = {loss:.2f}')
-
-
+    t.set_description(f'loss function = {loss:.6f}')
+    
+    if i % 50 == 0:
+        reconstructed_image = im_convert(white_noise)
+        image = Image.fromarray((reconstructed_image * 255).astype('uint8'))
+        image.save('output_image.jpg')
+     
