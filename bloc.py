@@ -6,7 +6,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Use GPU 0
-
+from tqdm import tqdm, trange
 
 # Function to load and preprocess the image
 def load_image(img_path, max_size=400, shape=None):
@@ -89,7 +89,7 @@ content_weight = 1  # Weight for content loss
 num_steps = 2000  # Number of iterations
 
 # Optimization loop
-for step in range(1, num_steps + 1):
+for step in (t := trange(1, num_steps + 1)):
     # Extract features from the target image
     target_features = get_features(target, vgg)
     # Calculate content loss
@@ -103,7 +103,11 @@ for step in range(1, num_steps + 1):
     
     # Print the loss every 100 steps
     if step % 100 == 0:
-        print(f'Step {step}, Loss: {loss.item()}')
+        reconstructed_image = im_convert(target)
+        reconstructed_image = Image.fromarray((reconstructed_image*255).astype('uint8'))
+        reconstructed_image.save('reco_image.jpg')
+        t.set_description(f'loss function = {loss.item():.6f}')
+        #print(f'Step {step}, Loss: {loss.item()}')
 
 # Display the reconstructed image
 plt.figure(figsize=(10, 10))
