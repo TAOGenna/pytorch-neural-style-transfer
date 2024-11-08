@@ -1,127 +1,122 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Use GPU 0
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import models, transforms
+import torchvision.models as models
+import torchvision.transforms as transforms
 from PIL import Image
 import matplotlib.pyplot as plt
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Use GPU 0
-from tqdm import tqdm, trange
+import numpy as np
 
-# Function to load and preprocess the image
-def load_image(img_path, max_size=400, shape=None):
-    image = Image.open(img_path).convert('RGB')
-    
-    # Resize the image
-    if max(image.size) > max_size:
-        size = max_size
-    else:
-        size = max(image.size)
-        
-    if shape is not None:
-        size = shape
-    
-    in_transform = transforms.Compose([
-        transforms.Resize((size, size)),
-        transforms.ToTensor(),
-        # Normalize using ImageNet's mean and std
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std= [0.229, 0.224, 0.225])])
-    
-    # Apply the transform to the image and add a batch dimension
-    image = in_transform(image)[:3, :, :].unsqueeze(0)
-    return image
+# Device configuration (use GPU if available)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Function to extract features from the model
-def get_features(image, model, layers=None):
-    if layers is None:
-        layers = {
-            '0': 'conv1_1',
-            '5': 'conv2_1',
-            '10': 'conv3_1',
-            '19': 'conv4_1',
-            '21': 'conv4_2',  # Content representation layer
-            '28': 'conv5_1'
-        }
-    features = {}
-    x = image
-    # Iterate through the model's layers
-    for name, layer in model._modules.items():
-        x = layer(x)
-        if name in layers:
-            features[layers[name]] = x
-    return features
+# Define image size
+imsize = 512 if torch.cuda.is_available() else 256  # Use small size if no GPU
+
+# Image loading and preprocessing function with normalization
+loader = transforms.Compose([
+    transforms.Resize((imsize, imsize)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])
+])
+
+def image_loader(image_name):
+    image = Image.open(image_name).convert('RGB')
+    image = loader(image).unsqueeze(0)
+    return image.to(device, torch.float)
+
+# Load the texture image
+texture_img = image_loader("/home/rotakagui/projects/pytorch-neural-style-transfer/data/style/starry_night.jpg")
 
 # Function to convert a tensor back to an image
 def im_convert(tensor):
     image = tensor.clone().detach().cpu().squeeze(0)
     image = image.numpy().transpose(1, 2, 0)
     # Un-normalize the image
-    image = image * [0.229, 0.224, 0.225] + [0.485, 0.456, 0.406]
+    image = image * np.array([0.229, 0.224, 0.225]) + np.array([0.485, 0.456, 0.406])
     # Clip the pixel values to be between 0 and 1
-    image = image.clip(0, 1)
+    image = np.clip(image, 0, 1)
     return image
 
+# Define the Gram Matrix function
+def gram_matrix(input):
+    _, feature_maps, h, w = input.size()
+    features = input.view(feature_maps, h * w)
+    G = torch.mm(features, features.t())
+    # Normalize the Gram matrix
+    return G.div(feature_maps * h * w)
+
 # Load the pre-trained VGG19 model
-vgg = models.vgg19(pretrained=True).features
+cnn = models.vgg19(weights=models.VGG19_Weights.DEFAULT).features.to(device).eval()
 
-# Freeze all model parameters
-for param in vgg.parameters():
-    param.requires_grad_(False)
+# Freeze all VGG parameters since we're optimizing the input image
+for param in cnn.parameters():
+    param.requires_grad = False
 
-# Move the model to the appropriate device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-vgg.to(device)
+# Define the layers to be used for texture representation
+texture_layers = [0, 5, 10, 19, 28]  # Indices of the layers
 
-# Load the content image
-content_image_path = os.path.join(os.path.dirname(__file__), 'data', 'content', 'bariloche.jpg')  # Replace with your image path
-content = load_image(content_image_path).to(device)
+# Extract features of the texture image at the desired layers
+def get_features(image, model, layers):
+    features = []
+    x = image
+    for i, layer in enumerate(model):
+        x = layer(x)
+        if i in layers:
+            features.append(x)
+    return features
 
-# Get the content features
-content_features = get_features(content, vgg)
+# Get the target features
+target_features = get_features(texture_img, cnn, texture_layers)
+target_grams = [gram_matrix(f) for f in target_features]
 
-# Create a white noise image
-target = torch.randn_like(content).requires_grad_(True).to(device)
+# Initialize the input image (white noise)
+input_img = torch.randn(texture_img.data.size(), device=device)
+input_img = input_img * 0.001  # Small initialization
+input_img.requires_grad_(True)
 
-# Define optimizer and hyperparameters
-optimizer = optim.Adam([target], lr=0.003)
-content_weight = 1  # Weight for content loss
-num_steps = 2000  # Number of iterations
+# Define optimizer
+optimizer = optim.Adam([input_img], lr=0.1)
 
-# Optimization loop
-for step in (t := trange(1, num_steps + 1)):
-    # Extract features from the target image
-    target_features = get_features(target, vgg)
-    # Calculate content loss
-    content_loss = torch.mean((target_features['conv4_2'] - content_features['conv4_2']) ** 2)
-    # Total loss
-    loss = content_weight * content_loss
-    # Backpropagation
+# Run the texture synthesis
+num_steps = 7000
+print('Optimizing...')
+
+for step in range(1, num_steps + 1):
     optimizer.zero_grad()
+
+    # Forward pass
+    features = get_features(input_img, cnn, texture_layers)
+    loss = 0
+    for f, t in zip(features, target_grams):
+        G = gram_matrix(f)
+        loss += nn.functional.mse_loss(G, t)
+
+    # Backward pass
     loss.backward()
+
+    # Update image
     optimizer.step()
-    
-    # Print the loss every 100 steps
-    if step % 100 == 0:
-        reconstructed_image = im_convert(target)
-        reconstructed_image = Image.fromarray((reconstructed_image*255).astype('uint8'))
-        reconstructed_image.save('reco_image.jpg')
-        t.set_description(f'loss function = {loss.item():.6f}')
-        #print(f'Step {step}, Loss: {loss.item()}')
 
-# Display the reconstructed image
-plt.figure(figsize=(10, 10))
-plt.imshow(im_convert(target))
+    # Clamp the input image to valid range after optimizer step
+    with torch.no_grad():
+        # Since we normalized the input, we need to clamp using the normalized values
+        for c in range(3):
+            min_val = (0 - loader.transforms[2].mean[c]) / loader.transforms[2].std[c]
+            max_val = (1 - loader.transforms[2].mean[c]) / loader.transforms[2].std[c]
+            input_img.data[0, c].clamp_(min_val, max_val)
 
+    if step % 50 == 0:
+        print("Step {}: Texture Loss : {:6f}".format(step, loss.item()))
+        output_image = im_convert(input_img)
+        output_pil = Image.fromarray((output_image * 255).astype('uint8'))
+        output_pil.save('starry_night_synthesized.jpg')
 
-from PIL import Image
-# Convert the tensor to a NumPy array and unnormalize it
-reconstructed_image = im_convert(target)
-
-# Convert the NumPy array to a PIL Image
-image = Image.fromarray((reconstructed_image * 255).astype('uint8'))
-
-# Save the image to a file
-image.save('reconstructed_image.jpg')
-
-plt.axis('off')
+# Save the final output image
+output_image = im_convert(input_img)
+output_pil = Image.fromarray((output_image * 255).astype('uint8'))
+output_pil.save('starry_night_synthesized.jpg')
