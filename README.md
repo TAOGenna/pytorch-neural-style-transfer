@@ -1,6 +1,6 @@
 # Neural Style Transfer - vanilla version
 
-This repo contains a simple \sim 100\sim 100 LoC implementation of the _Neural Style Transfer_ paper by Gatys et al. 
+This repo contains a simple `~100` LoC implementation of the _Neural Style Transfer_ paper by Gatys et al. 
 
 <p align="center">
   <img src="data/content/green_bridge.jpg" width="160"/> + 
@@ -16,13 +16,13 @@ We have style image whose style or texture we want to extract and subsequently e
 # Results
 Some beautiful results:
 <p align="center">
-<img src="results/bridge_exp1.jpg" width="170px">
-<img src="results/bridge_exp2.jpg" width="170px">
-<img src="results/bridge_exp3.jpg" width="170px">
+<img src="results/bridge_exp1.jpg" width="190px">
+<img src="results/bridge_exp2.jpg" width="190px">
+<img src="results/bridge_exp3.jpg" width="190px">
 
-<img src="results/golden1.jpg" width="170px">
-<img src="results/golden2.jpg" width="170px">
-<img src="results/golden3.jpg" width="170px">
+<img src="results/golden1.jpg" width="190px">
+<img src="results/golden2.jpg" width="190px">
+<img src="results/golden3.jpg" width="190px">
 </p>
 Because of memory issues I had to resize the images to 256x256, but I suspect that better results can be achieved by leaving the images as 512x512 as more details can be learned.
 
