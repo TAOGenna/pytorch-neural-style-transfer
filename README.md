@@ -11,7 +11,7 @@ This repo contains a simple `~100` LoC implementation of the _Neural Style Trans
 
 
 # Original Paper's Idea
-We have style image whose style or texture we want to extract and subsequently embed it into a target image. Then this algorithm allows us to produce new images that combine the content of an arbitrary photograph with the appearance of numerous well known artworks.
+We want to extract/learn the texture features of an style image and subsequently embed it into a target image. Then this algorithm allows us to produce new images that combine the content of an arbitrary photograph with the appearance of numerous well known artworks.
 
 # Results
 Some beautiful results:
