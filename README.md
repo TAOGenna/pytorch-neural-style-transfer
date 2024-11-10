@@ -30,19 +30,19 @@ Because of memory issues I had to resize the images to 256x256, but I suspect th
 ### Content Reconstruction
 By using learning transfer from a VGG19 net we can get deep feature representations of the target image, whose details can be reconstructed from a white image. While shallow layers gets almost perfect reconstruction of the image, deeper layers lose detailed pixel information.
 <p align="center">
-<img src="results/results_content/robot0.jpg" width="160px">
-<img src="results/results_content/robot200.jpg" width="160px">
-<img src="results/results_content/robot400.jpg" width="160px">
-<img src="results/results_content/robot600.jpg" width="160px">
-<img src="results/results_content/robot800.jpg" width="160px">
+<img src="results/results_content/robot0.jpg" width="140px">
+<img src="results/results_content/robot200.jpg" width="140px">
+<img src="results/results_content/robot400.jpg" width="140px">
+<img src="results/results_content/robot600.jpg" width="140px">
+<img src="results/results_content/robot800.jpg" width="140px">
 </p>
 
 ### Style/Texture Extraction
 For the style extraction we don't want to keep details about the artwork but instead have an overall understanding of the texture/style. This is where _Gram matrices_ come into play as the texture model needs to be agnostic to spacial information. See what happens for the artwork of _Starry Night_ by Vincent van Gogh:
 <p align="center">
-<img src="results/results_style/night1.jpg" width="160px">
-<img src="results/results_style/night2.jpg" width="160px">
-<img src="results/results_style/night3.jpg" width="160px">
+<img src="results/results_style/night1.jpg" width="140px">
+<img src="results/results_style/night2.jpg" width="140px">
+<img src="results/results_style/night3.jpg" width="140px">
 </p>
 
 In my case the ratio of $\alpha/\beta=1/70$ or $\alpha/\beta=1/100$ and a number of epochs around $1e3$ worked best. 
