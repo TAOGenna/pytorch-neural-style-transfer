@@ -3,9 +3,12 @@
 This repo contains a simple $\sim 100$ LoC implementation of the _Neural Style Transfer_ paper by Gatys et al. 
 
 <p align="center">
-<img src="results/bridge_exp3.jpg" width="570"/>
-<img src="results/cafe_and_bridge.jpg" width="260"/>
+  <img src="data/content/green_bridge.jpg" width="260"/> + 
+  <img src="data/style/vg_la_cafe.jpg" width="260"/> = 
+  <img src="results/bridge_exp3.jpg" width="260"/>
 </p>
+
+
 
 # Original Paper's Idea
 We have style image whose style or texture we want to extract and subsequently embed it into a target image. Then this algorithm allows us to produce new images that combine the content of an arbitrary photograph with the appearance of numerous well known artworks.
