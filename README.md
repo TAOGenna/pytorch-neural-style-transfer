@@ -48,9 +48,6 @@ For the style extraction we don't want to keep details about the artwork but ins
 <img src="data/style/starry_night.jpg" width="270px">
 </p>
 <p align="center">
-<img src="data/style/starry_night.jpg" width="270px">
-</p>
-<p align="center">
 <img src="results/results_style/night1.jpg" width="140px">
 <img src="results/results_style/night2.jpg" width="140px">
 <img src="results/results_style/night3.jpg" width="140px">
