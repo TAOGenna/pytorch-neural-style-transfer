@@ -8,6 +8,8 @@ This [repo](https://github.com/TAOGenna/pytorch-neural-style-transfer) contains 
 <img src="results/bridge_exp3.jpg" width="250"/>
 </p>
 
+
+
 # Original Paper's Idea
 
 We have an style image whose texture we want to extract and subsequently embed it into a target image. Using CNNs (usually a Vgg-16/19) this algorithm allows us to produce new images that combine the content of an arbitrary photograph with the appearance of numerous well known artworks.
@@ -33,11 +35,11 @@ By using tranfer learning from a VGG19 net we can get deep feature representatio
 <img src="data/content/robot.jpg" width="270px">
 </p>
 <p align="center">
-<img src="results/results_content/robot0.jpg" width="160px">
-<img src="results/results_content/robot200.jpg" width="160px">
-<img src="results/results_content/robot400.jpg" width="160px">
-<img src="results/results_content/robot600.jpg" width="160px">
-<img src="results/results_content/robot800.jpg" width="160px">
+<img src="results/results_content/robot0.jpg" width="140px">
+<img src="results/results_content/robot200.jpg" width="140px">
+<img src="results/results_content/robot400.jpg" width="140px">
+<img src="results/results_content/robot600.jpg" width="140px">
+<img src="results/results_content/robot800.jpg" width="140px">
 </p>
 
 # Style/Texture Extraction
@@ -46,11 +48,13 @@ For the style extraction we don't want to keep details about the artwork but ins
 <img src="data/style/starry_night.jpg" width="270px">
 </p>
 <p align="center">
-<img src="results/results_style/night1.jpg" width="160px">
-<img src="results/results_style/night2.jpg" width="160px">
-<img src="results/results_style/night3.jpg" width="160px">
+<img src="data/style/starry_night.jpg" width="270px">
 </p>
-The stand alone code to play with texture extraction can be found in the file `style_reconstruction.ipynb`. For reproduction purposes, the hyperparamenters given in the original paper not always work so it is important to play with them until get reasonable results. In my case the ratio of alpha/beta=1/70 or alpha/beta=1/100 and a number of epochs around 1e3 worked best. 
+<p align="center">
+<img src="results/results_style/night1.jpg" width="140px">
+<img src="results/results_style/night2.jpg" width="140px">
+<img src="results/results_style/night3.jpg" width="140px">
+</p>
 
 # Usage 
 - Clone repository
