@@ -1,5 +1,7 @@
 <h1 style="text-align: center;">Neural Style Transfer</h1>
-This [repo](https://github.com/TAOGenna/pytorch-neural-style-transfer) contains a simple ~100 LoC implementation of the _Neural Style Transfer_ paper by Gatys et al. 
+
+
+This <ins>[repo](https://github.com/TAOGenna/pytorch-neural-style-transfer) </ins> contains a simple ~100 LoC implementation of the _Neural Style Transfer_ paper by Gatys et al. 
 
 
 <p align="center">
